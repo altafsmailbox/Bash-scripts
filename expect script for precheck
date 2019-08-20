@@ -1,0 +1,62 @@
+#!/usr/bin/expect
+
+set timeout 15
+set prompt "(%|#|\\$|%\]) $"
+set  ip [lindex $argv 0]
+set user [lindex $argv 1]
+set paswd [lindex $argv 2]
+
+#set hid [open ./server.list r]
+#set hosts [read -nonewline $hid]
+#close $hid
+
+#foreach host [split $hosts "\n"]
+#foreach host [split $hosts "\n"] 
+
+spawn /usr/bin/ssh -o StrictHostKeyChecking=no $user@$ip
+expect "assword: "
+send  "$paswd\r"
+
+
+expect -re "$prompt"
+send --  hostname\r 
+expect -re "$prompt" 
+#send -- "cat /proc/net/bonding/bond0\r"
+
+
+send "sudo su -\r"
+expect ": "
+send "$paswd\r"
+expect -re "$prompt"
+send -- "yum update -y\r"
+expect -re "$prompt"
+send -- "uname -r\r"
+
+expect -re "$prompt"
+send -- "reboot\r"
+#expect -re "$prompt"
+#send -- "cat /etc/sysconfig/network-scripts/ifcfg-p3p*\r"
+
+
+#expect -re "$prompt"
+#send -- "ethtool p3p1\r"
+
+#expect -re "$prompt"
+
+
+
+
+
+#send -- "df -h >>/tmp/precheck\r"
+#expect -re "$prompt"
+#send -- "df -h | wc -l  >>/tmp/precheck\r"
+#expect -re "$prompt"
+
+
+
+
+#send -- "cat /tmp/precheck\r"
+expect -re "$prompt"
+send -- "exit\r"
+
+
