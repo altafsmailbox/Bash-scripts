@@ -1,0 +1,142 @@
+#!/bin/bash
+# Automated Bash scrtip to manage user id in  in IDRAC 7 & 8 
+#Script written by Altaf Hussain (Linux Server Admin) Ibm
+#list of servers to be staged in /home/user's_home_folder/server.list
+#list of servers which had issues will be logged under /tmp/pending
+#Logs can be found under /tmp/logs
+#final status can be found under /tmp/output 
+
+
+a=/tmp/input1
+d=/tmp/logs1
+f=/tmp/output1
+
+
+echo -e " Enter the user id to log in to the blades"
+read id 
+echo -e " Enter the password for the user id $id "
+read -s pass
+if [ $? -eq 0 ]
+then 
+echo -e "Greetings \n please select your option \n  1. Add user \n 2. delete user \n 3. Change Password \n 4. Quit"
+read var
+
+case "$var" in
+
+1) 
+echo -e "Enter the user id you would like to add to the blade server"
+read id1
+echo -e " Enter the password you'd like to set for the user $id1 "
+read -s pass1
+for i in `cat /home/altaf/server.list`
+do
+echo " `date`                     "$id" ">>$d
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm get  System.ChassisInfo.ServiceTag"  >>$f
+	
+	if [ $? -eq 0 ]
+	then 
+echo "============================================="  >>$f
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm getconfig -u $id1" >$a
+var1=`awk  -F= '/Name=/{print $2}' $a | tr -d '\r'`
+	if  [[   "$id1" == "$var1"   ]] ;
+ then 
+echo " user id $id1 already exists in the blade $i "  >> $f
+else
+		for b in {2..16}
+			do  
+		sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm get iDRAC.Users.$b" > $a  
+ 		var2=`awk  -F= '/Name=/{print $2}' $a|tr -d '\r'`
+	
+		if  [ -z  $var2 ] ; then 
+			sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm config -g cfgUserAdmin -o cfgUserAdminUserName -i $b $id1" >>$d
+			sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i " racadm config -g cfgUserAdmin -o cfgUserAdminPassword -i $b $pass1 " >>$d
+			sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i " racadm config -g cfgUserAdmin -i $b -o cfgUserAdminPrivilege 0x000001ff " >>$d 
+			sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i " racadm config -g cfgUserAdmin -i $b -o cfgUserAdminEnable 1 " >>$d 
+			sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i " racadm config -g cfgUserAdmin -i $b -o cfgUserAdminIpmiLanPrivilege 4 " >>$d 
+			sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i " racadm config -g cfgUserAdmin -i $b -o cfgUserAdminSolEnable 1" >>$d 
+			echo "user  id $id1 has been added to  $i"  >>$f ; break 
+			elif  [ "$b" == 16  ] ; then
+		echo " user id $id1 couldn't be added to the server as there is no slot left in $i ">> $f   
+		echo "=============================================" >>$f
+			else 
+  			echo "user id $var2 present in index $b"  >> $d
+		fi			
+		done
+
+		fi
+
+		echo " Activity successfully completed on $i" >> $d
+	else 
+		echo "Not able to connect to $i" >> $d
+	fi
+done
+;;
+2)
+echo -e "Enter the user id you would like to delete from the Idrac : "
+read id2
+for i in `cat /home/altaf/server.list`
+do
+echo " `date`                     "$id" ">>$d
+echo "============================================="  >>$f
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm get  System.ChassisInfo.ServiceTag"  >>$f
+	
+	if [ $? -eq 0 ]
+	then 
+                sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm getconfig -u $id2 " >$a
+		e=`grep Index $a |cut -d'=' -f2|tr -d '\r'`
+		echo " user $e will be deleted from the blade $i "
+		if [  -z   $e ] ;
+		then
+	echo " user id $id2 does not exist in the blade "  >>$f
+	else 
+	sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i  " racadm config -g cfguseradmin -i $e -o cfguseradminusername \"\" "  >>$d
+		echo "user id $id2 has been deleted from the blade $i"  >>$f
+					sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "exit"
+		  fi			
+		echo "=============================================" >>$f
+		sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "exit"
+
+		echo " Activity successfully completed on $i" >> $d
+	else 
+		echo "Not able to connect to $i" >> $d
+	fi
+done
+;;
+3)
+echo " Enter the user id to modify the password ? "
+read id3
+echo " Enter the new password "
+read -s pass2
+for i in `cat /home/altaf/server.list`
+do
+echo " `date`                     "$id" ">>$d
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm get  System.ChassisInfo.ServiceTag"  >>$f
+	
+	if [ $? -eq 0 ]
+	then 
+echo "============================================="  >>$f
+			  sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm getconfig -u $id3 " >$a
+		m=`grep Index $a |cut -d'=' -f2|tr -d '\r'`
+		if [ -z $m ]; then
+echo " User $id3 not found on the blade $i "
+		else
+			sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i " racadm config -g cfgUserAdmin -o cfgUserAdminPassword -i $m $pass2 " >>$d
+			echo " Password has been modified for the user $id3 on $i " >> $f
+fi
+echo "=============================================" >>$f
+
+
+		echo " password modification  has been successfully completed on $i" >> $d
+	else 
+		echo "Not able to connect to $i" >> $d
+fi
+done
+;;
+4)				
+exit
+;;
+esac
+else 
+echo " Please enter the password"
+exit 
+fi
