@@ -1,0 +1,30 @@
+#!/bin/bash
+
+
+id=user
+pass=123456
+f=/tmp/output
+#Path of file
+
+
+for i in `cat /home/user/server.list`
+
+do
+
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm getsvctag"  >>$f
+
+ 	if [ $? -eq 0 ]
+	then 
+echo "============================================="  >>$f
+
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm remoteimage -d" >>$f
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm remoteimage -c -u althussa -p 123456 -l 172.29.0.1:/install/rhel7-k3.iso"  >>$f
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm remoteimage -s"  >>$f
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm config -g cfgServerInfo -o cfgServerBootOnce 1"  >>$f
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm config -g cfgServerInfo -o cfgServerFirstBootDevice VCD-DVD"  >>$f
+sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "racadm serveraction powercycle"  >>$f
+else
+echo "Unable to connect to $i" >>$f
+fi
+done
+
