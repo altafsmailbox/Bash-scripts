@@ -1,0 +1,24 @@
+#!/bin/bash
+
+id=user
+pass='123456'
+a=/tmp/input
+#Path of file
+
+
+for i in `cat /home/r09afh/server.list`
+do
+
+
+g=`sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i " netstat -nr |grep 11.72.35.0"`
+h=`echo $g | awk -F' ' '{print $8}'|tr -d '\r'`
+#i="(echo '+RasH(PwV58Z')| /usr/bin/pssh -h /home/altaf/server.list -l r09afh -x '-tt' -I -o /tmp/pssh/   "-O StrictHostKeyChecking=no" -i   -t 0 -A  "sudo "/tail -n 2 /etc/sysconfig/network-scripts/route-eth0""
+####sshpass -p $pass ssh -q -t -o StrictHostKeyChecking=no $id@$i "echo "" > /home/r09afh/route-${h}"
+(echo $pass)|pssh -H $id@$i -l r09afh -x '-tt' -I -o /tmp/pssh/   "-O StrictHostKeyChecking=no" -i -t 0  "sudo tail -n 2 /etc/sysconfig/network-scripts/route-${h}|cut -d'='  -f1 | grep -o '[0-9]*'" > $a
+b=`cat $a| grep sudo  -A1| grep -v sudo|tr -d '\r'`
+let j="$b+1"
+(echo $pass)|pssh -H $id@$i -l r09afh -x '-tt' -I -o /tmp/pssh/   "-O StrictHostKeyChecking=no" -i -t 0  "echo "ADDRESS$j='11.72.35.0'" |sudo tee -a /etc/sysconfig/network-scripts/route-${h}" 
+(echo $pass)|pssh -H $id@$i -l r09afh -x '-tt' -I -o /tmp/pssh/   "-O StrictHostKeyChecking=no" -i -t 0 "echo "NETMASK$j='255.255.255.0'" |sudo tee -a /etc/sysconfig/network-scripts/route-${h}"
+(echo $pass)|pssh -H $id@$i -l r09afh -x '-tt' -I -o /tmp/pssh/   "-O StrictHostKeyChecking=no" -i -t 0  "echo "GATEWAY$j='11.72.26.1'" | sudo tee -a /etc/sysconfig/network-scripts/route-${h}"
+
+done
