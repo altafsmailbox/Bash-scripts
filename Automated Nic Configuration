@@ -1,0 +1,78 @@
+#!/bin/bash
+
+echo " enter the VLAN which has default gw:"
+read a 
+
+echo " Enter the default Gateway:"
+read b 
+
+for j in `ip addr show | grep UP |egrep -v "bond0:|lo:" |cut -d':' -f2`
+do
+
+echo > /tmp/ifcfg-$j "\
+TYPE=Ethernet
+BOOTPROTO=none
+DEFROUTE=yes
+PEERDNS=yes
+PEERROUTES=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_PEERDNS=yes
+IPV6_PEERROUTES=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=$j
+DEVICE=$j
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes "
+done
+
+
+
+filecontent=( `cat  /home/altaf/Documents/Scripts/vlans` )
+filecontent1=( `cat  /home/altaf/Documents/Scripts/ips` )
+count=${#filecontent[@]}
+
+for (( i = 0 ; i < count ; i++ ))
+do
+
+echo > /tmp/ifcfg-bond0 "\
+IPV6INIT="no"
+NAME="Bond connection bond0"
+BONDING_MASTER="yes"
+BOOTPROTO="static"
+BONDING_OPTS="mode=802.3ad miimon=100 lacp_rate=fast"
+DEVICE="bond0"
+TYPE="Bond"
+ONBOOT="yes"
+"
+
+echo > /tmp/ifcfg-bond0.${filecontent[$i]} "\
+VLAN="yes"
+TYPE="Vlan"
+DEVICE="bond0.${filecontent[$i]}"
+PHYSDEV="bond0"
+VLAN_ID="${filecontent[$i]}"
+REORDER_HDR="no"
+GVRP="no"
+VLAN_FLAGS="NO_REORDER_HDR"
+MVRP="no"
+BOOTPROTO="none"
+IPADDR="${filecontent1[$i]}"
+PREFIX="22"
+DEFROUTE="no"
+IPV4_FAILURE_FATAL="no"
+IPV6INIT="no"
+NAME="bond0.${filecontent[$i]}"
+ONBOOT="yes" "
+
+case "${filecontent[$i]}" in 
+
+580)
+
+;;
+esac
+done
