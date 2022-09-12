@@ -1,3 +1,21 @@
+
+    <!--*************************************************-->
+    <!-- Deploy to Java SE in App Service Linux           -->
+    <!--*************************************************-->
+       
+    <plugin>
+        <groupId>com.microsoft.azure</groupId>
+        <artifactId>azure-webapp-maven-plugin</artifactId>
+        <version>1.14.0</version>
+        <configuration>
+            <schemaVersion>v2</schemaVersion>
+            <subscriptionId>${SUBSCRIPTION_ID}</subscriptionId>
+            <!-- Web App information -->
+            <resourceGroup>${RESOURCEGROUP_NAME}</resourceGroup>
+            <appName>${WEBAPP_NAME}</appName>
+            <region>${REGION}</region>
+            <pricingTier>P1v2</pricingTier>
+            <!-- Java Runtime Stack for Web App on Linux-->
             <runtime>
                 <os>Linux</os>
                 <javaVersion>Java 8</javaVersion>
@@ -33,4 +51,4 @@
             </appSettings>
             
         </configuration>
-    </plugin>
+    </plugin>            
